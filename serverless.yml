@@ -1,0 +1,56 @@
+app: whiteprompt
+service: cognito-triggers
+
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${env:ENVIRONMENT_CODE}
+  region: ${env:AWS_REGION}
+  lambdaHashingVersion: 20201221
+  versionFunctions: false
+  iam:
+    role:
+      managedPolicies:
+        - "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+        - "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
+      statements:
+        - Effect: Allow
+          Action:
+            - cognito-idp:*
+          Resource:
+            - { 'Fn::Join': [':', ['arn:aws:cognito-idp', { Ref: 'AWS::Region' }, { Ref: 'AWS::AccountId' }, 'userpool/*']] }
+
+  environment:
+    AWS_COGNITO_USER_POOL: ${env:AWS_COGNITO_USER_POOL}
+    AWS_PINPOINT_APP_ID: ${env:AWS_PINPOINT_APP_ID}
+    AWS_PINPOINT_SMS_KEYWORD: ${env:AWS_PINPOINT_SMS_KEYWORD}
+    AWS_PINPOINT_SMS_ORIGINATION_NUMBER: ${env:AWS_PINPOINT_SMS_ORIGINATION_NUMBER}
+    AWS_PINPOINT_REGION: ${env:AWS_PINPOINT_REGION}
+    ENVIRONMENT_CODE: ${env:ENVIRONMENT_CODE}
+
+functions:
+  cognito-create-auth-challenge:
+    handler: cognito-create-auth-challenge.handler
+    events:
+      - cognitoUserPool:
+          pool: ${env:AWS_COGNITO_USER_POOL}
+          trigger: CreateAuthChallenge
+          existing: true
+  cognito-define-auth-challenge:
+    handler: cognito-define-auth-challenge.handler
+    events:
+      - cognitoUserPool:
+          pool: ${env:AWS_COGNITO_USER_POOL}
+          trigger: DefineAuthChallenge
+          existing: true
+  cognito-verify-auth-challenge:
+    handler: cognito-verify-auth-challenge.handler
+    events:
+      - cognitoUserPool:
+          pool: ${env:AWS_COGNITO_USER_POOL}
+          trigger: VerifyAuthChallengeResponse
+          existing: true
